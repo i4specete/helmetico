@@ -1,0 +1,53 @@
+---
+
+  - ec2_vpc_net_facts:
+      region: "{{ region }}"
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+    register: vpc_facts
+
+  - debug:
+      var: vpc_facts
+
+  - ec2_vpc:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      state: absent
+      vpc_id: "{{ item.id }}"
+      resource_tags: "{{ item.tags }}"
+      region: "{{ region }}"
+    with_items:
+      - "{{ vpc_facts.vpcs }}"
+    when:
+      - item.is_default != true
+
+
+# Full creation example with subnets and optional availability zones.
+# The absence or presence of subnets deletes or creates them respectively.
+  - ec2_vpc:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      state: present
+      cidr_block: "{{ vpc.cidr_ip }}/{{ vpc.cidr_mask }}"
+      resource_tags: "{{ vpc.resource_tags }}"
+      subnets:
+        - cidr: "{{ subnet.cidr_ip1 }}/{{ subnet.cidr_mask }}"
+          az: "{{ region }}a"
+          resource_tags: { "Environment": "Secure", "Tier" : "Public", "Name": "Public" }
+        - cidr: "{{ subnet.cidr_ip2 }}/{{ subnet.cidr_mask }}"
+          az: "{{ region }}a"
+          resource_tags: { "Environment": "Secure", "Tier" : "Private", "Name": "Private" }
+      internet_gateway: True
+      route_tables:
+        - subnets:
+          - "{{ subnet.cidr_ip1 }}/{{ subnet.cidr_mask }}"
+          routes:
+            - dest: 0.0.0.0/0
+              gw: igw
+        - subnets:
+          - "{{ subnet.cidr_ip2 }}/{{ subnet.cidr_mask }}"
+          routes:
+            - dest: 0.0.0.0/0
+              gw: igw
+      region: "{{ region }}"
+    register: vpc

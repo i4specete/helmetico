@@ -1,0 +1,29 @@
+
+---
+
+# roles/infra/tasks/main.yml
+
+
+# Create VPC
+- include_tasks: vpc.yml
+
+# Create a Public Subnet and a Private Subnet
+- include_tasks: subnet.yml
+
+# Create Internet Gateway for VPC
+- include_tasks: gateway.yml
+
+# Create a NAT if not exists
+- include_tasks: nat.yml
+
+# Set up one public subnet route table and one private subnet route table
+- include_tasks: route-table.yml
+
+# Create Security Groups
+- include_tasks: sg.yml
+
+# Upload a keypair
+- include_tasks: keypair.yml
+
+# Create a bastion
+- include_tasks: bastion.yml

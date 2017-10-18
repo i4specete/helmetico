@@ -1,0 +1,9 @@
+---
+# Basic provisioning example
+- name: Remove AWS Infra
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: False
+  roles:
+    - prueba-remove

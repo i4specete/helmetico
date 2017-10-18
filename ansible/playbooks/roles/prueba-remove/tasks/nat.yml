@@ -1,0 +1,73 @@
+---
+
+# Recover all info from NATs
+- name: Recover all info from NATs
+  ec2_vpc_nat_gateway_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      state: ['available']
+  register: nat_facts
+
+# Variable to know the number of NATs
+- name: Variable to know the number of NATs
+  set_fact: nat_number=0
+
+# Check if NAT is created
+- name: Check if NAT is created
+  set_fact:
+    nat_number: "{{ nat_number | int + 1 }}"
+  with_items:
+    - "{{ nat_facts.result }}"
+  when:
+    - vpc_id == item.vpc_id
+
+# Create Elastic IP if there is none NAT create
+- name: Create Elastic IP if there is none NAT create
+  ec2_eip:
+    in_vpc:           true
+    region:           "{{ aws_region }}"
+    aws_access_key:   "{{ aws_access_key }}"
+    aws_secret_key:   "{{ aws_secret_key }}"
+    state:            present
+    reuse_existing_ip_allowed: true
+  when:
+    - nat_number | int == 0
+  register: eip
+
+# Set EIP in variable if there is none NAT create
+- name: Set EIP in variable if there is none NAT create
+  set_fact:
+    my_elastic_ip: "{{ eip.public_ip }}"
+  when:
+    - nat_number | int == 0
+
+# Create NAT Gateway if there is none NAT create
+- name: Create NAT Gateway if there is none NAT create
+  ec2_vpc_nat_gateway:
+    state: present
+    subnet_id: "{{ public_subnet_id }}"
+    eip_address: "{{ my_elastic_ip }}"
+    wait: yes
+    if_exist_do_not_create: true
+    region: "{{ aws_region }}"
+  when:
+    - nat_number | int == 0
+  register: my_nat_gateway
+
+# Set new NAT Gateway ID in variable
+- name: Set new NAT Gateway ID in variable
+  set_fact:
+    nat_gateway_id: "{{ my_nat_gateway.nat_gateway_id }}"
+  when:
+    - nat_number | int == 0
+
+# Set old NAT Gateway ID in variable
+- name: Set old NAT Gateway ID in variable
+  set_fact:
+    nat_gateway_id: "{{ item.nat_gateway_id }}"
+  with_items:
+    - "{{ nat_facts.result }}"
+  when:
+    - vpc_id == item.vpc_id and nat_number | int != 0

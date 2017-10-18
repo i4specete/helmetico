@@ -1,0 +1,26 @@
+---
+
+- ec2_vpc_nat_gateway_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      state: ['available']
+  register: nat_facts
+
+- debug:
+    var: nat_facts
+
+- ec2_vpc_nat_gateway:
+    state: absent
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    nat_gateway_id: "{{ item.nat_gateway_id }}"
+    release_eip: yes
+    wait: yes
+    wait_timeout: 300
+  with_items:
+    - "{{ nat_facts.result }}"
+  when:
+    - my_vpc == item.vpc_id

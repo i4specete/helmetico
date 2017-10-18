@@ -1,0 +1,215 @@
+---
+
+- ec2_vpc_net_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+  register: vpc_facts
+
+- debug:
+    var: vpc_facts
+
+- name: Set VPC in variable
+  set_fact:
+    my_vpc: "{{ item.id }}"
+  with_items:
+    - "{{ vpc_facts.vpcs }}"
+  when:
+    - item.is_default != true and item.tags.Generated == "Helmetico"
+
+- ec2_vpc_subnet_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      vpc-id: "{{ my_vpc }}"
+  register: subnet_facts
+
+- debug:
+    var: subnet_facts
+
+- ec2_remote_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      "tag:Generated": Helmetico
+  register: ec2
+
+- debug:
+    var: ec2
+
+- name: remove elastic IP associated with an instance
+  ec2_eip:
+    device_id: "{{ item.id }}"
+    ip: "{{ item.public_ip_address }}"
+    state: absent
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+  with_items:
+    - "{{ ec2.instances }}"
+  when:
+    - item.public_ip_address != ""
+
+- local_action:
+    module: ec2
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    state: absent
+    instance_id: "{{ item.id }}"
+  with_items:
+    - "{{ ec2.instances }}"
+
+
+- include: nat.yml
+
+- name: Gather facts about a filtered list of Internet Gateways
+  ec2_vpc_igw_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+        "tag:Generated": Helmetico
+  register: igw_facts
+
+- debug:
+    var: igw_facts
+
+- name: allocate a new elastic IP and associate it with an instance
+  ec2_eip:
+    device_id: "{{ item.internet_gateway_id }}"
+    state: absent
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    release_on_disassociation: true
+  with_items:
+    - "{{ igw_facts.internet_gateways }}"
+  when:
+    - my_vpc == item.attachments[0].vpc_id
+
+- ec2_vpc:
+    vpc_id: "{{ item.id }}"
+    region: "{{ aws_region }}"
+    state: present
+    resource_tags: "{{ item.tags }}"
+    internet_gateway: False
+    wait: yes
+  with_items:
+    - "{{ vpc_facts.vpcs }}"
+  when:
+    - item.is_default != true and item.tags.Generated == "Helmetico"
+
+- ec2_vpc_igw:
+    vpc_id: "{{ item.attachments }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    tags:
+      Generated: Helmetico
+    state: absent
+  with_items:
+    - "{{ igw_facts.internet_gateways }}"
+  when:
+    - my_vpc == item.attachments[0].vpc_id
+
+- ec2_vpc_subnet_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      vpc-id: "{{ my_vpc }}"
+  register: subnet_facts
+
+- debug:
+    var: subnet_facts
+
+- name: Remove subnet for database servers
+  ec2_vpc_subnet:
+    state: absent
+    vpc_id: "{{ item.vpc_id }}"
+    cidr: "{{ item.cidr_block }}"
+  with_items:
+    - "{{ subnet_facts.subnets }}"
+
+- ec2_group_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      vpc-id: "{{ my_vpc }}"
+  register: sg_facts
+
+- debug:
+    var: sg_facts
+
+- name: "Delete group by its id"
+  ec2_group:
+    group_id: "{{ item.group_id }}"
+    state: absent
+  with_items:
+    - "{{ sg_facts.security_groups }}"
+  when:
+    - my_vpc == item.vpc_id and item.group_name != "default"
+
+- ec2_vpc_route_table_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    filters:
+      vpc-id: "{{ my_vpc }}"
+      "tag:Generated": Helmetico
+  register: route_table_facts
+
+- debug:
+    var: route_table_facts
+
+- ec2_vpc_route_table:
+    vpc_id: "{{ item.vpc_id }}"
+    region: "{{ aws_region }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: absent
+    route_table_id: "{{ item.id }}"
+    lookup: id
+  with_items:
+    - "{{ route_table_facts.route_tables }}"
+  when:
+    - my_vpc == item.vpc_id
+
+- ec2_vpc:
+    vpc_id: "{{ item.id }}"
+    region: "{{ aws_region }}"
+    state: present
+    resource_tags: "{{ item.tags }}"
+    internet_gateway: False
+    route_tables: []
+    wait: yes
+  with_items:
+    - "{{ vpc_facts.vpcs }}"
+  when:
+    - item.is_default != true and item.tags.Generated == "Helmetico"
+
+- ec2_vpc:
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+    state: absent
+    vpc_id: "{{ item.id }}"
+    resource_tags: "{{ item.tags }}"
+    region: "{{ aws_region }}"
+    wait: yes
+  with_items:
+    - "{{ vpc_facts.vpcs }}"
+  when:
+    - item.is_default != true and item.tags.Generated == "Helmetico"
+
+- ec2_vpc_net_facts:
+    region: "{{ aws_region }}"
+    aws_access_key: "{{aws_access_key}}"
+    aws_secret_key: "{{aws_secret_key}}"
+  register: vpc_facts
+
+- debug:
+    var: vpc_facts

@@ -1,0 +1,8 @@
+aws_access_key: "AKIAIHKHJJMTA3EQPFBQ"
+aws_secret_key: "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"
+key_name: "iserrano"
+aws_region: "eu-west-1"
+vpc_id: "vpc-567a3131"
+ami_id: "ami-acd005d5"
+instance_type: "t2.micro"
+my_local_cidr_ip: "10.0.0.1/24"

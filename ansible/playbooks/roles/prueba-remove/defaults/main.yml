@@ -1,0 +1,25 @@
+---
+
+############################
+# Used in parts 1, 2 and 3 #
+############################
+
+# AWS Credentials
+aws_access_key: "AKIAIHKHJJMTA3EQPFBQ"
+aws_secret_key: "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"
+key_name: "iserrano"
+aws_region: "eu-west-1"
+
+# VPC Information
+vpc_name:       "My VPC"
+vpc_cidr_block: "10.0.0.0/16"
+
+# Tags
+generated_tag: "Helmetico"
+
+# All Internet address
+internet_addr:          "0.0.0.0/0"
+
+# Subnets
+public_subnet_cidr:  "10.0.10.0/24"
+private_subnet_cidr: "10.0.11.0/24"

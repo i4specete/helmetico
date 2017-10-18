@@ -1,0 +1,12 @@
+---
+
+# Upload a keypair
+- name: Upload a keypair
+  ec2_key:
+    name: user
+    key_material: "{{ item }}"
+    region:           "{{ aws_region }}"
+    aws_access_key:   "{{ aws_access_key }}"
+    aws_secret_key:   "{{ aws_secret_key }}"
+    state:            present
+  with_file: ~/.ssh/id_rsa.pub

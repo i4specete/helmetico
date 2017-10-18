@@ -1,0 +1,10 @@
+
+---
+
+# roles/infra/tasks/main.yml
+
+# Create a bastion
+- include_tasks: facts.yml
+
+# Create a bastion
+- include_tasks: bastion.yml
