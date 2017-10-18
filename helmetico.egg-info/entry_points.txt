@@ -1,3 +1,0 @@
-[console_scripts]
-helmetico = helmetico.commands.cli:cli
-
