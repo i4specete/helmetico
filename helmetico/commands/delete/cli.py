@@ -1,5 +1,5 @@
 import click
-from helmetico.commons.aws_helpers import *
+from helmetico.commands.delete.delete import *
 
 
 @click.group(help="Delete secure AWS commands")
