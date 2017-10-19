@@ -40,3 +40,5 @@ def store_credentials_aws(profile,accesskey,secretkey):
 def create_iam_aws(profile,user,group):
     if check_profile(profile):
         print("existe")
+        if user is not None:
+            print(user)
