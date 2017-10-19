@@ -1,5 +1,5 @@
-aws_access_key: "AKIAIHKHJJMTA3EQPFBQ"
-aws_secret_key: "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"
+aws_access_key: ""
+aws_secret_key: ""
 key_name: "iserrano"
 aws_region: "eu-west-1"
 vpc_id: "vpc-567a3131"
