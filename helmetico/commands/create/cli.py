@@ -1,5 +1,5 @@
 import click
-from helmetico.commons.aws_helpers import *
+from helmetico.commands.create.create import *
 
 @click.group(help="Create secure AWS commands ")
 @click.pass_context
@@ -17,10 +17,11 @@ def credentials(ctx, **kwargs):
 
 @create.command(help="Create a secure IAM group")
 @click.pass_context
-@click.argument("TBD")
+@click.option("--profile","-p",help="Profile helmetico AWS to execute actions",required=True)
+@click.option("--user","-a",help="User/Users to create in AWS IAM. ",required=False)
+@click.option("--group","-s",help="Create group or Associate user to group ",required=False)
 def iam(ctx, **kwargs):
-    print("TBD")
-
+    create_iam_aws(kwargs["profile"],kwargs["user"],kwargs["group"])
 
 @create.command(help="Create a secure networks")
 @click.pass_context

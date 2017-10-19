@@ -1,5 +1,5 @@
 import click
-from helmetico.commons.aws_helpers import *
+from helmetico.commands.update.update  import *
 @click.group("update", help="Update secure AWS commands")
 @click.pass_context
 def update(ctx, **kwargs):
