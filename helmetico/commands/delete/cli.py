@@ -1,4 +1,5 @@
 import click
+from helmetico.commons.aws_helpers import *
 
 
 @click.group(help="Delete secure AWS commands")
@@ -6,6 +7,11 @@ import click
 def delete(ctx, **kwargs):
     pass
 
+@delete.command(help="Create AWS Credentials")
+@click.pass_context
+@click.option("--profile","-p",help="Profile AWS",required=True)
+def credentials(ctx, **kwargs):
+    delete_credentials_aws(kwargs["profile"])
 
 @delete.command(help="Delete a secure IAM group")
 @click.pass_context

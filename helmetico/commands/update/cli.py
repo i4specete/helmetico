@@ -5,7 +5,7 @@ from helmetico.commons.aws_helpers import *
 def update(ctx, **kwargs):
     pass
 
-@update.command(help="Update AWS Credentials")
+@update.command(help="Create AWS Credentials")
 @click.pass_context
 @click.option("--profile","-p",help="Profile AWS",required=True)
 @click.option("--accesskey","-a",help="Access Key to access to AWS account",required=True)

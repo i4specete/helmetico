@@ -1,43 +1,86 @@
 from pathlib import Path
-import os
+import os,json
 
 
 def store_credentials_aws(profile,accesskey,secretkey):
-    filename = str(Path.home()) + "/.aws/credentials"
+    filename = str(Path.home()) + "/.helmetico/credentials.json"
+    noexist=True
     try:
-        if "["+profile+"]" in open(filename).read():
-            print("[+] The profile exists")
-        else :
-            print("[+] Creating profile in ~/.aws/credentials")
-            with open(filename,'a') as f:
-                f.write("\n")
-                f.write("[" + profile + "]\n")
-                f.write("aws_access_key_id=" + accesskey + "\n")
-                f.write("aws_secret_access_key=" + secretkey + "\n\n")
+        with open(filename) as json_file:
+            data = json.load(json_file)
+            for i in data['profiles']:
+                if profile in i['profile']:
+                    print("[+] This profile exists currently")
+                    noexist=False
+            if noexist:
+                print("[+] Adding new "+profile+" profile .....")
+                data['profiles'].append({
+                'profile':profile,
+                'accesskey':accesskey,
+                'secretkey':secretkey})
+
+        with open(filename, 'w') as f:
+            json.dump(data,f)
+
 
     except FileNotFoundError:
         print("[+] Creating new configuration file...")
-        print("[+] Storing AWS profile in ~/.aws/credentials......")
+        print("[+] Storing AWS profile in "+filename+ " ......")
+        data = {}
+        data['profiles'] = []
+        data['profiles'].append({
+            'profile':profile,
+            'accesskey':accesskey,
+            'secretkey':secretkey})
+
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, 'a') as f:
-            f.write("["+profile+"]\n")
-            f.write("aws_access_key_id=" + accesskey+"\n")
-            f.write("aws_secret_access_key=" + secretkey)
-        #  dev = boto3.Session(profile_name='default')
+        with open(filename, 'w') as f:
+            json.dump(data,f)
 
-
-"""def update_credentials_aws(profile,accesskey,secretkey):
-    filename = str(Path.home()) + "/.aws/credentials"
+def update_credentials_aws(profile,accesskey,secretkey):
+    filename = str(Path.home()) + "/.helmetico/credentials.json"
+    noexist = True
     try:
-        if "[" + profile + "]" in open(filename).read():
-            print("[+] The profile exists")
-            print("[+] Updating...")
-            with open(filename,'r') as f:
-                for i,line in enumerate(f,1):
-                    if "[" + profile + "]" in line:
-                        replace=f.__next__()
-                        replace1=f.__next__()
+        with open(filename) as json_file:
+            data = json.load(json_file)
+            for i in data['profiles']:
+                if profile in i['profile']:
+                    print("[+] Updating "+profile+" profile....")
+                    i['accesskey']=accesskey
+                    i['secretkey']=secretkey
+                    print("[+] DONE!")
+                    noexist=False
+            if noexist:
+                print("[+] You need to create a profile with \"helmetico create credentials\"")
+        with open(filename, 'w') as f:
+                json.dump(data, f)
 
     except FileNotFoundError:
-        print("[+] You must create a profile for updating")"""
+        print("[+] You need to create a profile with \"helmetico create credentials\"")
+
+
+def delete_credentials_aws(profile):
+    filename = str(Path.home()) + "/.helmetico/credentials.json"
+    noexist = True
+    count = 0
+
+    try:
+        with open(filename) as json_file:
+            data = json.load(json_file)
+            for i in data['profiles']:
+                if profile in i['profile']:
+                    print("[+] Deleting "+profile+" profile....")
+                    del data['profiles'][count]
+                    print("[+] DONE!")
+                    noexist=False
+                count=count+1
+            if noexist:
+                print("[+] You need to create a profile with \"helmetico create credentials\"")
+        with open(filename, 'w') as f:
+                json.dump(data, f)
+
+    except FileNotFoundError:
+        print("[+] You need to create a profile with \"helmetico create credentials\"")
+
+
 
